@@ -1,0 +1,62 @@
+---
+- name: get INFLUX admin user
+  ansible.builtin.command: "sed -n 's/^INFLUXDB_ADMIN_USER=//p' {{ service_home }}/wnt.env"
+  register: reg_influx_user
+
+- name: get INFLUX admin pw
+  ansible.builtin.command: "sed -n 's/^INFLUXDB_ADMIN_PASSWORD=//p' {{ service_home }}/wnt.env"
+  register: reg_influx_pw
+
+- name: get INFLUX retention
+  ansible.builtin.command: "sed -n 's/^INFLUXDB_DB_RETENTIONPOLICY=//p' {{ service_home }}/wnt.env"
+  register: reg_influx_rp
+
+- name: get INFLUX token
+  ansible.builtin.command: "sed -n 's/^INFLUXDB_ADMIN_TOKEN=//p' {{ service_home }}/wnt.env"
+  register: reg_influx_admin_token
+
+
+- name: Run influx migration
+  ansible.builtin.command: |
+    docker run -d --rm \
+      --name influxdb_upgrade \
+      --mount source=wnt_influxdb,target=/var/lib/influxdb \
+      --mount source=wnt_influxdb2,target=/var/lib/influxdb2 \
+      -v ./influxdb.conf:/etc/influxdb/influxdb.conf \
+      -v ./influx_config.json:/etc/influxdb2/config.json \
+      -e DOCKER_INFLUXDB_INIT_MODE=upgrade \
+      -e DOCKER_INFLUXDB_INIT_USERNAME={{ reg_influx_user.stdout }} \
+      -e DOCKER_INFLUXDB_INIT_PASSWORD={{ reg_influx_pw.stdout }} \
+      -e DOCKER_INFLUXDB_INIT_ADMIN_TOKEN={{ reg_influx_admin_token.stdout }} \
+      -e DOCKER_INFLUXDB_INIT_ORG=wirepas \
+      -e DOCKER_INFLUXDB_INIT_BUCKET=wirepas \
+      -e DOCKER_INFLUXDB_INIT_UPGRADE_V1_CONFIG=/etc/influxdb/influxdb.conf \
+      -e DOCKER_INFLUXDB_INIT_RETENTION={{ reg_influx_rp.stdout }} \
+      influxdb:2.7
+
+- set_fact:
+    looped_for: 0
+    update_complete: false
+
+- name: Get logs from migrate container
+  include_tasks: influx_logs.yml
+
+- name: Delete old Wirepas bucket
+  ansible.builtin.command: "docker exec influxdb_upgrade influx bucket delete --name wirepas -t {{ reg_influx_admin_token.stdout }}"
+
+- name: Delete old Wirepas autogen bucket
+  ansible.builtin.command: "docker exec influxdb_upgrade influx bucket delete --name wirepas/autogen -t {{ reg_influx_admin_token.stdout }}"
+
+- name: Get old bucket id
+  ansible.builtin.shell: "docker exec influxdb_upgrade influx bucket list --name wirepas/WIREPASRETENTIONPOLICY -t {{ reg_influx_admin_token.stdout }} -o wirepas | tail -n +2 | grep -o '[0-9a-z]*' | head -n 1"
+  register: reg_old_bucket_id
+
+- name: Rename old bucket id
+  ansible.builtin.command: "docker exec influxdb_upgrade influx bucket update -id {{ reg_old_bucket_id.stdout }} --name wirepas -t {{ reg_influx_admin_token.stdout }}"
+
+- name: Stop updater container
+  ansible.builtin.command: "docker stop influxdb_upgrade"
+
+- name: Remove updater container
+  ansible.builtin.command: "docker container rm influxdb_upgrade"
+  ignore_errors: true

@@ -1,0 +1,25 @@
+- name: get influx updater logs
+  ansible.builtin.command: "docker logs influxdb_upgrade"
+  register: reg_updater_logs
+
+- set_fact:
+    string_to_search: "Upgrade successfully completed. Start the influxd service now"
+
+- set_fact:
+    update_complete: true
+  when: string_to_search in reg_updater_logs.stderr
+
+- set_fact:
+    looped_for : "{{ looped_for | int + 1 | int }}"
+  when: string_to_search not in reg_updater_logs.stderr
+
+- name: Sleep for 60 to get more logs
+  wait_for:
+    timeout: 60
+  delegate_to: localhost
+  when: not update_complete
+
+# This will loop for 3 hours should be able to upgrade > 500GB of influxdb
+- name: "Loop get Influx logs"
+  include_tasks: influx_logs.yml
+  when: looped_for | int < 180 and not update_complete

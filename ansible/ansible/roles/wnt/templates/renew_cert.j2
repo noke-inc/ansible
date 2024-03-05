@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# USAGE fulldomainname needed as param (./renew_cert.sh myexample.wirepas.com)
+#- name: "Concat fullchain and privkey in /home/{{ instance_admin_user }}/wnt"
+sudo certbot renew
+sudo systemctl restart nginx
+sudo cat /etc/letsencrypt/live/$1/fullchain.pem /etc/letsencrypt/live/$1/privkey.pem > /home/{{ instance_admin_user }}/wnt/bundle.pem
+sudo chown -R $(id -u):$(id -g) /home/{{ instance_admin_user }}/wnt/bundle.pem
+chmod 0644 /home/{{ instance_admin_user }}/wnt/bundle.pem
+echo -e "set ssl cert /etc/ssl/certs/bundle.pem <<\n$(cat /home/{{ instance_admin_user }}/wnt/bundle.pem)\n" | socat tcp-connect:localhost:9999 -
+echo "commit ssl cert /etc/ssl/certs/bundle.pem" | socat tcp-connect:localhost:9999 -

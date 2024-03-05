@@ -1,0 +1,37 @@
+---
+
+- name: generate influx read username
+  shell: "openssl rand -base64 32 | tr -dc '[:alnum:]\n\r'"
+  register: register_influx_read_user
+
+- name: generate influx read password
+  shell: "openssl rand -base64 32 | tr -dc '[:alnum:]\n\r'"
+  register: register_influx_read_password
+
+- name: generate influx admin token
+  shell: "openssl rand -base64 32 | tr -dc '[:alnum:]\n\r'"
+  register: register_influx_admin_token
+
+- name: Set created update secrets
+  set_fact:
+    wnt_influx_admin_token: "{{ register_influx_admin_token.stdout }}"
+    wnt_influx_read_user: "{{ register_influx_read_user.stdout }}"
+    wnt_influx_read_password: "{{ register_influx_read_password.stdout }}"
+
+- name: Update wnt.env to contain updated for 4.4
+  lineinfile:
+    path: "{{ service_home }}/wnt.env"
+    backup: yes
+    line: "{{ item }}"
+    create: no
+  with_items:
+    - 'MQTT_JSON_FORWARD_CALCULATED_ANCHOR_LOCATIONS={{ wnt_mqtt_json_forward_calculated_anchor_locations | bool | string | lower }}'
+    - 'INFLUXDB_ADMIN_TOKEN={{ wnt_influx_admin_token }}'
+    - 'INFLUXDB_READ_USER={{ wnt_influx_read_user }}'
+    - 'INFLUXDB_READ_PASSWORD={{ wnt_influx_read_password }}'
+
+- name: Migrate influxdb1 to influxdb2
+  include_tasks: influx_migrate.yml
+
+- name: Migrate Postgres
+  import_tasks: put_postgres_data.yml

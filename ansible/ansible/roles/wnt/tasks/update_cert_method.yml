@@ -1,0 +1,33 @@
+---
+
+- name: stop WNT Docker service
+  command: "docker compose down"
+  args:
+    chdir: "{{ service_home }}"
+  ignore_errors: true
+
+- name: copy TLS proxy keychain
+  copy:
+    src:  "{{wnt_keychain}}"
+    dest: "{{service_home}}/bundle.pem"
+    owner: "{{instance_admin_user}}"
+    group: "{{instance_admin_user}}"
+    mode: 0600
+  ignore_errors: true
+  when: (certificate == "pregenerated") or (certificate == "self_signed")
+
+- name: copy TLS proxy keychain from letsencrypt path
+  copy:
+    src: "{{letsencrypt_facts['bundle_path']}}"
+    dest: "{{service_home}}/bundle.pem"
+    owner: "{{instance_admin_user}}"
+    group: "{{instance_admin_user}}"
+    remote_src: yes
+    mode: 0600
+  ignore_errors: true
+  become: true
+  become_method: sudo
+  when: certificate == "letsencrypt"
+
+- name: start WNT Docker service
+  shell: "cd {{service_home}} && ./redeploy.sh"

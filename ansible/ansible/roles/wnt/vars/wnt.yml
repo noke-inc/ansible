@@ -1,0 +1,55 @@
+
+# Wirepas Oy 2018
+
+#Admin
+wnt_admin_username: admin
+wnt_admin_fullname: admin
+wnt_admin_role: 1
+wnt_user_username: operator
+wnt_user_fullname: operator
+wnt_user_role: 2
+
+# MQTT
+wnt_mqtt_host: "mqttbroker"
+wnt_mqtt_port: 1883
+wnt_mqtt_gateway_username: mosquittouser
+wnt_mqtt_master_username: mqttmasteruser
+wnt_mqtt_persistent_client_expiration: "1h"
+
+# MQTT JSON
+wnt_mqtt_json_is_on: '{{ wpe_version | default(None) | string != "None" }}'
+wnt_mqtt_json_username: mqttjsonuser
+wnt_mqtt_json_is_optimized_on: true
+wnt_mqtt_json_node_data_topic: node_data_json
+wnt_mqtt_json_forward_calculated_anchor_locations: false
+
+# MQTT LIB USER
+wnt_mqttlib_json_username: mqttlibraryuser
+
+# Influx
+wnt_influx_db: wirepas
+wnt_influx_db_port: 8086
+wnt_influx_db_host: "influx"
+wnt_influx_db_retentionpolicy: "90d"
+wnt_influx_remote_api_responses: true
+
+# Postgres
+wnt_postgres_username: clrobusr324xxd
+wnt_postgres_host: "postgres"
+wnt_postgres_port: 5432
+
+# Authentication manager
+wnt_auth_manager_host: "auth_manager"
+wnt_auth_manager_port: 8013
+wnt_auth_manager_internal_port: 11403
+
+# Front end router
+wnt_ferouter_host: "ferouter"
+wnt_ferouter_port: 8011
+wnt_ferouter_internal_port: 8022
+
+# Metadata manager
+wnt_metadata_manager_host: "metadata_manager"
+wnt_metadata_manager_port: 8012
+
+

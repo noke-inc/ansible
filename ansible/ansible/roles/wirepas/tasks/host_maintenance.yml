@@ -1,0 +1,33 @@
+# Wirepas Oy 2023
+---
+- name: Check docker version
+  command: "docker --version"
+  register: docker_version_out
+  ignore_errors: true
+- set_fact:
+    docker_version: "{{ docker_version_out.stdout | default(1.1) | regex_search('(\\d+\\.\\d+)') }}"
+  when: docker_version_out is defined and docker_version_out.stdout is defined and docker_version_out.stdout|length >= 2
+
+- name: Install Docker and ensure its on startup
+  block:
+    - name: remove docker related packages
+      apt:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ remove_packages }}"
+      become: true
+      become_method: sudo
+
+    - name: Install docker
+      import_tasks: install_docker.yml
+  when: docker_version | float < docker_minimum_version
+
+- name: Install / update build deps
+  apt:
+    name: "{{item}}"
+    update_cache: yes
+    force_apt_get: True
+    cache_valid_time: 0
+  loop: "{{install_packages}}"
+  become: true
+  become_method: sudo

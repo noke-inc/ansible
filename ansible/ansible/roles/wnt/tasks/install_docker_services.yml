@@ -1,0 +1,100 @@
+# Wirepas Oy 2018
+#
+# Setups the wnt services at the remote host
+#
+# wirepas Oy
+
+---
+- name: include common vars
+  include_vars:
+    file: common.yml
+
+- name: include wnt vars
+  include_vars:
+    file: wnt.yml
+
+# update also update_docker_services when changing
+- name: copy configs for WNT
+  copy:
+    src: "conf/{{item}}"
+    dest: "{{service_home}}/{{item}}"
+    mode: 0775
+  loop:
+    - "dhparams.pem"
+    - "haproxy.cfg"
+    - "influxdb.conf"
+    - "influx_config.json"
+    - "vmq.acl"
+    - "prestart.sh"
+    - "postgres.conf"
+    - "start_influx.sh"
+
+- name: replace TLS proxy keychain
+  set_fact:
+    wnt_keychain: "{{certs_register['bundle_path']}}"
+  when: certs_register is defined
+
+- name: copy TLS proxy keychain
+  copy:
+    src:  "{{wnt_keychain}}"
+    dest: "{{service_home}}/bundle.pem"
+    owner: "{{instance_admin_user}}"
+    group: "{{instance_admin_user}}"
+    mode: 0644
+  ignore_errors: true
+  when: (certificate == "pregenerated") or (certificate == "self_signed")
+
+- name: copy TLS proxy keychain from letsencrypt path
+  copy:
+    src: "{{letsencrypt_facts['bundle_path']}}"
+    dest: "{{service_home}}/bundle.pem"
+    owner: "{{instance_admin_user}}"
+    group: "{{instance_admin_user}}"
+    remote_src: yes
+    mode: 0644
+  ignore_errors: true
+  become: true
+  become_method: sudo
+  when: certificate == "letsencrypt"
+
+- name: copy utility scripts
+  copy:
+    src: "{{item}}"
+    dest: "{{service_home}}/{{item|basename}}"
+    mode: 0775
+  with_fileglob:
+    - "*.sh"
+
+- name: generate templated utility scripts
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ service_home }}/{{ item }}.sh"
+    mode: 0775
+  loop:
+    - "generate_user_keys"
+    - "redeploy"
+    - "renew_cert"
+    - "send_debug_data_to_wirepas"
+
+- name: generate credentials
+  import_tasks: generate_credentials.yml
+
+- name: generate env file and customer reports
+  import_tasks: generate_customer_files.yml
+
+- name: create composition file for wnt_{{ wnt_version }}
+  template:
+    src: "docker-compose_wnt.j2"
+    dest: "{{ service_home }}/docker-compose.yml"
+    mode: 0775
+
+  # note: docker service module is not yet compatible with compose version 3
+- name: start Docker service
+  shell: "cd {{service_home}} && ./redeploy.sh"
+  register: output
+
+- name: ensure backup cron is running
+  import_tasks: backup.yml
+
+- name: cleanup
+  import_tasks: cleanup.yml

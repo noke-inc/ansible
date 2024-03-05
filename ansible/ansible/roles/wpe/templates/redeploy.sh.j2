@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+FLAGS=${1:-""}
+$(aws ecr get-login --region {{ aws_ecr_region }} --no-include-email --registry-id {{ aws_ecr_account }});
+docker compose down;
+docker compose pull;
+docker compose up -d ${FLAGS};

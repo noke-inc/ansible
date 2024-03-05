@@ -1,0 +1,35 @@
+# Wirepas Oy 2022
+---
+encrypt_local_files: true
+wpe_storage: "wpe"
+
+remote_home: "/home/{{instance_admin_user}}"
+remote_certs: "/home/{{instance_admin_user}}/wpe/certs"
+service_home: "{{remote_home}}/wpe"
+
+archive_path: "{{remote_home}}/archives"
+archive_client: "{{archive_path}}/certs_client.zip"
+archive_server: "{{archive_path}}/certs_server.zip"
+
+# Default expiration in roughly 5 years
+wpe_certs_expiration_days: 1826
+wpe_client_certificates_path: "{{archive_path}}/client_certs.zip"
+
+mqtt_username: "{{wnt_mqtt_master_username | default('mosquittouser')}}"
+mqtt_password: "{{wnt_mqtt_master_password | default('e2b359b171f84a0d972e53d141851a47')}}"
+
+mqtt_hostname: "localhost"
+mqtt_port: 1883
+mqtt_allow_insecure: false
+mqtt_certificate: null
+mqtt_ignore_configuration: false
+
+wpe_services_list: [
+  "wpe-subscriber",
+  "wpe-flow",
+  "wpe-core"
+]
+
+calculate_location_for_anchors: false
+use_strongest_neighbors: 3
+wpe_major: "{{ wpe_version | default(None) | regex_search('(\\d+\\.\\d+)') }}"

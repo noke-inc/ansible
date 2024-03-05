@@ -1,0 +1,14 @@
+---
+aws_cli_output: "text"
+aws_region: "eu-west-1"
+
+# Please fill these with your client credentials
+aws_access_key_id: null
+aws_secret_access_key: null
+aws_ecr_account: "751854743495" # wirepas ECR production account
+aws_ecr_region: "eu-west-1"
+aws_ecr_repository: "{{ aws_ecr_account }}.dkr.ecr.{{ aws_ecr_region }}.amazonaws.com"
+
+# This parameter is not needed for Customer Selfhosting plays even if it remote would be installed in AWS
+# not good idea to run against default any automation, therefore any profile will do
+aws_profile: ""

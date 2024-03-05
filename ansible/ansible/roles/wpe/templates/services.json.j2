@@ -1,0 +1,47 @@
+{
+    "flow": {
+        "enabled": true,
+        "name": "flow",
+        "address": "[::]:20000",
+
+        "override_cn": "localhost",
+        "key": "/home/wirepas/wpe/certs/flow_manager.key",
+        "certificate": "/home/wirepas/wpe/certs/flow_manager.crt",
+        "root.crt": "/home/wirepas/wpe/certs/rootca.crt",
+        "client.key": "/home/wirepas/wpe/certs/client.key",
+        "client.crt": "/home/wirepas/wpe/certs/client.crt",
+
+        "is_calculate_location_for_anchors": {{ calculate_location_for_anchors | bool | string | lower }},
+        "subscriber_timeout": 600,
+        "workers": 10
+    },
+    "core": {
+        "enabled": true,
+        "name": "core",
+        "address": "[::]:20200",
+
+        "override_cn": "localhost",
+        "key": "/home/wirepas/wpe/certs/core_manager.key",
+        "certificate": "/home/wirepas/wpe/certs/core_manager.crt",
+        "root.crt": "/home/wirepas/wpe/certs/rootca.crt",
+        "client.key": "/home/wirepas/wpe/certs/client.key",
+        "client.crt": "/home/wirepas/wpe/certs/client.crt",
+
+        "workers": 10,
+        "use_strongest_neighbors": {{ use_strongest_neighbors }}
+    },
+    "subscriber": {
+        "enabled": true,
+        "name": "subscriber",
+        "address": "[::]:20400",
+
+        "override_cn": "localhost",
+        "key": "/home/wirepas/wpe/certs/subscriber_manager.key",
+        "certificate": "/home/wirepas/wpe/certs/subscriber_manager.crt",
+        "root.crt": "/home/wirepas/wpe/certs/rootca.crt",
+        "client.key": "/home/wirepas/wpe/certs/client.key",
+        "client.crt": "/home/wirepas/wpe/certs/client.crt",
+
+        "workers": 10
+    }
+}

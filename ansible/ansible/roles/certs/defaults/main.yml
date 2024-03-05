@@ -1,0 +1,16 @@
+---
+cert_output_dir: "temp_certs_{{inventory_hostname}}"
+
+#For self signing certificate
+server_dns: "exampleserver.anydomain.com"
+country_code_in_caps: "FI"
+organization_name: "Wirepas"
+organization_unit: "Wirepas Self Signed Certificate Authority"
+common_name: "anydomain.com"
+
+#key
+key_length: 4096
+
+#cert
+signature_algorithm: sha256
+valid_days: 365

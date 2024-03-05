@@ -1,0 +1,51 @@
+JSON API credentials
+====================
+Please use this user if you wish to interact with the backend API using JSON. API defined under WNT-backend API.
+https://developer.wirepas.com
+
+|
+
+    User name:
+        {{wnt_mqtt_json_username}}
+
+    Password:
+        {{wnt_mqtt_json_password}}
+
+|
+
+JSON LIB credentials
+====================
+User for Wirepas MQTT Library
+This Lib is designed to ease the development of tools on top of Wirepas Gateway to backend Api (MQTT with protobuf
+payloads). https://github.com/wirepas/wirepas-mqtt-library
+
+|
+
+    User name:
+        {{ wnt_mqttlib_json_username }}
+
+    Password:
+        {{ wnt_mqttlib_json_password }}
+
+|
+
+User access rights
+==================
+
+The MQTT broker has the following rules for the users
+
+user mqttjsonuser
+topic read node_data_json/#
+
+user mosquittouser
+topic read gw-request/#
+topic write gw-event/#
+topic write gw-response/#
+
+user mqttlibraryuser
+topic write gw-request/#
+topic read gw-event/#
+topic read gw-response/#
+
+user mqttmasteruser
+topic #

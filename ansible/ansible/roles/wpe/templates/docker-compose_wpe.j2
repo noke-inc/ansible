@@ -1,0 +1,73 @@
+# Wirepas Oy 2018
+#
+# WPE services
+
+version: '3.5'
+services:
+
+    flow:
+        # Wirepas Positioning - Flow service
+        container_name: wpe-flow
+        image: {{ aws_ecr_repository }}/wirepas-positioning:{{ wpe_version }}
+        depends_on:
+            - core
+
+        network_mode: host
+        restart: always
+
+        environment:
+            - WPE_VERBOSE_LEVEL=info
+            - PYTHONUNBUFFERED=TRUE
+        command: wpe --service flow --service_definition /home/wirepas/wpe/configs/services.localhost.json
+
+        volumes:
+            - ./certs:/home/wirepas/wpe/certs/
+            - ./services.json:/home/wirepas/wpe/configs/services.localhost.json
+
+        logging:
+            driver: journald
+
+    core:
+        # Wirepas Positioning - Core service
+        container_name: wpe-core
+        image: {{ aws_ecr_repository }}/wirepas-positioning:{{ wpe_version }}
+
+        network_mode: host
+        restart: always
+
+        environment:
+            - WPE_VERBOSE_LEVEL=info
+            - PYTHONUNBUFFERED=TRUE
+        command: wpe --service core --service_definition /home/wirepas/wpe/configs/services.localhost.json
+
+        volumes:
+            - ./certs:/home/wirepas/wpe/certs/
+            - ./services.json:/home/wirepas/wpe/configs/services.localhost.json
+
+        logging:
+            driver: journald
+
+
+    subscriber:
+        # Wirepas Positioning - Subscriber service
+        container_name: wpe-subscriber
+        image: {{ aws_ecr_repository }}/wirepas-positioning:{{ wpe_version }}
+        depends_on:
+            - flow
+
+        network_mode: host
+        restart: always
+
+        environment:
+            - WPE_VERBOSE_LEVEL=warning
+            - PYTHONUNBUFFERED=TRUE
+        command: wpe --service subscriber --service_definition /home/wirepas/wpe/configs/services.localhost.json --storage_definition /home/wirepas/wpe/databases.json
+
+        volumes:
+            - ./certs:/home/wirepas/wpe/certs/
+            - ./databases.json:/home/wirepas/wpe/databases.json
+            - ./services.json:/home/wirepas/wpe/configs/services.localhost.json
+
+        logging:
+            driver: journald
+

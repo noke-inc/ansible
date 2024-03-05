@@ -1,0 +1,60 @@
+# Wirepas Oy 2018
+#
+# Generates env file that contains all the variables for customer
+# Genarates and customer reports
+#
+# wirepas Oy
+---
+- name: create cert folder {{cert_output_dir}}
+  file:
+   path: "{{cert_output_dir}}"
+   state: directory
+   mode: 0770
+
+- name: generate rootca key
+  command: "openssl genrsa -out {{cert_output_dir}}/rootca_{{common_name}}.key {{key_length}}"
+
+- name: generate server certificate signing request
+  command: "openssl req -new \
+    -subj '/C={{country_code_in_caps}}/O={{organization_name}}/OU={{organization_unit}}/CN={{server_dns}}' \
+    -key {{cert_output_dir}}/rootca_{{common_name}}.key \
+    -out {{cert_output_dir}}/server_{{common_name}}.csr"
+
+- name: generate server key
+  command: "openssl genrsa -out {{cert_output_dir}}/ca_{{common_name}}.key {{key_length}}"
+
+- name: generate self signed certificate for CA
+  command: "openssl req -new -x509 \
+    -subj '/C={{country_code_in_caps}}/O={{organization_name}}/OU={{organization_unit}}/CN={{server_dns}}' \
+    -days {{valid_days}} \
+    -key {{cert_output_dir}}/ca_{{common_name}}.key \
+    -out {{cert_output_dir}}/ca_{{common_name}}.crt"
+
+- name: sign self signed certificate
+  command: "openssl x509 -req -{{signature_algorithm}} \
+    -in {{cert_output_dir}}/server_{{common_name}}.csr \
+    -CA {{cert_output_dir}}/ca_{{common_name}}.crt \
+    -CAkey {{cert_output_dir}}/ca_{{common_name}}.key \
+    -CAcreateserial \
+    -days {{valid_days}} \
+    -out {{cert_output_dir}}/{{common_name}}.crt"
+
+- name: generate wnt keychain server bundle.pem
+  shell: "cat {{cert_output_dir}}/ca_{{common_name}}.crt \
+    {{cert_output_dir}}/{{common_name}}.crt \
+    {{cert_output_dir}}/ca_{{common_name}}.key > {{cert_output_dir}}/bundle.pem"
+
+- name: generate wnt client and gateway client_bundle.pem
+  shell: "cat {{cert_output_dir}}/ca_{{common_name}}.crt \
+    {{cert_output_dir}}/{{common_name}}.crt > {{cert_output_dir}}/client_bundle.pem"
+
+- name: create vars and certs_register
+  set_fact:
+    certs_register: {
+      'bundle_path': "{{cert_output_dir}}/bundle.pem",
+      'output_dir': "{{cert_output_dir}}",
+      'gw_bundle_path': "{{cert_output_dir}}/client_bundle.pem"
+     }
+
+- debug:
+    var: certs_register

@@ -1,0 +1,3 @@
+---
+- name: dump postgres data
+  raw: docker exec -t wnt_postgres pg_dumpall -c -U $(docker exec wnt_postgres bash -c 'echo "$POSTGRES_USER"') > {{service_home}}/backups/postgres_dump_data_transfer.sql

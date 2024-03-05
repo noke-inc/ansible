@@ -1,0 +1,24 @@
+# Wirepas Oy 2021
+#
+# Keep wnt.env not polluted with old version data
+#
+# Wirepas Oy
+---
+- name: Remove OLD VARS if they exists
+  lineinfile:
+    state: absent
+    path: "{{ wnt_storage }}/{{ instance_name }}/wnt.env"
+    regexp: "{{ item.line }}"
+  with_items:
+    - { line: '^CLUSTER_NO=' }
+    - { line: '^POSITIONING_SOURCE_END_POINT_V1=' }
+    - { line: '^POSITIONING_DESTINATION_END_POINT_V1=' }
+    - { line: '^POSITIONING_SOURCE_END_POINT_V2=' }
+    - { line: '^POSITIONING_DESTINATION_END_POINT_V2=' }
+  delegate_to: localhost
+
+- name: copy modified wnt_env to backend
+  copy:
+    src: "{{ wnt_storage }}/{{ instance_name }}/wnt.env"
+    dest: "{{ service_home }}/wnt.env"
+    mode: 0664

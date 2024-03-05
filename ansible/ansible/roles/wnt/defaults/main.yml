@@ -1,0 +1,32 @@
+# Wirepas Oy 2022
+---
+encrypt_local_files: true
+wnt_storage: "wnt"
+wnt_websocket_protocol: "ws"
+
+remote_home: "/home/{{instance_admin_user}}"
+service_home: "{{remote_home}}/wnt"
+
+wnt_pwd_length: "20"
+
+wnt_databases: ["wnt_influxdb", "wnt_mosquittodb", "wnt_postgresdb", "wnt_vernemq_data"]
+wnt_services_list_test: ["wnt_auth_manager",
+  "wnt_diagnostics_injector_0"]
+wnt_services_list: ["wnt_auth_manager",
+  "wnt_diagnostics_injector_0",
+  "wnt_diagnostics_injector_1",
+  "wnt_ferouter",
+  "wnt_gateway_communicator",
+  "wnt_haproxy",
+  "wnt_influx",
+  "wnt_metadata_manager",
+  "wnt_mqttbroker",
+  "wnt_next_hop_counter",
+  "wnt_parser",
+  "wnt_postgres",
+  "wnt_rtsituation_manager_0",
+  "wnt_rtsituation_manager_1"
+]
+# for compatibility checks
+wnt_major: "{{ wnt_version | default(None) | regex_search('(\\d+\\.\\d+)') }}"
+

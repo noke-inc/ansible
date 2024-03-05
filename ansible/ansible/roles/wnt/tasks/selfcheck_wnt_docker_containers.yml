@@ -1,0 +1,24 @@
+---
+- name: Check WNT state
+  import_tasks: check_wnt_state.yml
+
+- name: Ensure all WNT services are running
+  block:
+    - name: shutting down
+      command: "docker compose down"
+      args:
+        chdir: "{{ service_home }}"
+      ignore_errors: true
+
+    - name: bring wnt back up
+      command: "docker compose up -d"
+      args:
+        chdir: "{{ service_home }}"
+
+    - name: Check WNT state after reboot
+      import_tasks: check_wnt_state.yml
+  when: not wnt_running
+
+- assert:
+    that:
+    - wnt_running

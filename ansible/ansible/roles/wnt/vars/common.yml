@@ -1,0 +1,18 @@
+# Wirepas Oy 2018
+---
+
+# Server ports
+wnt_application_server_port: 8811
+wnt_metadata_server_port: 8812
+wnt_authentication_server_port: 8813
+wnt_time_series_server_port: 8886
+wnt_mqtt_json_server_port: 9002
+wnt_application_unsecure_server_port: 8011
+wnt_metadata_unsecure_server_port: 8012
+wnt_authentication_unsecure_server_port: 8013
+wnt_time_series_unsecure_server_port: 8086
+wnt_mqtt_json_unsecure_server_port: 9001
+
+# WNT env file
+wnt_cluster_size: 2
+wnt_rtsituation_interval_ms: 30000

@@ -1,0 +1,297 @@
+# Wirepas Oy
+#
+# WNT composition file
+#
+# About environment variables:
+# https://docs.docker.com/compose/environment-variables/#the-env-file
+#
+
+
+version: '3.5'
+services:
+{% if certificate != "no_cert" %}
+    haproxy: # only needed on "the cloud"
+        container_name: wnt_haproxy
+        image: "{{ aws_ecr_repository }}/wnt_haproxy:{{ wnt_version }}"
+        env_file:
+            - wnt.env
+        
+        depends_on:
+            - ferouter
+            - auth_manager
+            - metadata_manager
+            - influx
+            - mqttbroker
+
+        restart: always
+
+        networks:
+            - backend_network
+
+        ports:
+            - 8811:8811
+            - 8812:8812
+            - 8813:8813
+            - 8883:8883
+            - 8886:8886
+            - 9002:9002
+            - 9999:9999
+
+        volumes:
+            - ./bundle.pem:/etc/ssl/certs/bundle.pem
+            - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+            - ./dhparams.pem:/etc/haproxy/dhparams.pem
+
+        logging:
+            driver: journald
+{% endif %}
+    mqttbroker:
+        container_name: wnt_mqttbroker
+        image: "{{ aws_ecr_repository }}/wnt_vernemq:{{ wnt_version }}"
+        env_file:
+            - wnt.env
+
+        restart: always
+
+        networks:
+            - backend_network
+            - broker_network
+
+        #START_CONTAINER_PORT
+        ports:
+            - 1883:1883
+            - 9001:8080
+        #END_CONTAINER_PORT
+
+        volumes:
+            - vernemq_data:/vernemq/data
+            - ./vmq.acl:/vernemq/etc/vmq.acl
+            - ./prestart.sh:/vernemq/etc/prestart.sh
+
+        logging:
+            driver: journald
+
+    parser:
+        container_name: wnt_parser
+        image: "{{ aws_ecr_repository }}/wnt_parser:{{ wnt_version }}"
+        env_file:
+            - wnt.env
+
+        depends_on:
+            - mqttbroker
+
+        restart: always
+
+        networks:
+            - backend_network
+
+        logging:
+            driver: journald
+
+    gateway_communicator:
+        container_name: wnt_gateway_communicator
+        image: "{{ aws_ecr_repository }}/wnt_gateway_communicator:{{ wnt_version }}"
+        env_file:
+            - wnt.env
+
+        depends_on:
+            - mqttbroker
+
+        restart: always
+
+        networks:
+            - backend_network
+
+        logging:
+            driver: journald
+{% for n in range(wnt_cluster_size | int ) %}
+    rtsituation_manager_{{ n }}:
+        container_name: wnt_rtsituation_manager_{{ n }}
+        image: "{{ aws_ecr_repository }}/wnt_rtsituation_manager:{{ wnt_version }}"
+
+        environment:
+            - CLUSTER_NO={{ n }}
+
+        env_file:
+            - wnt.env
+
+        depends_on:
+            - mqttbroker
+
+        restart: always
+
+        networks:
+            - backend_network
+
+        logging:
+            driver: journald
+{% endfor %}
+
+    ferouter:
+        container_name: wnt_ferouter
+        image: "{{ aws_ecr_repository }}/wnt_ferouter:{{ wnt_version }}"
+        env_file:
+            - wnt.env
+        depends_on:
+            - mqttbroker
+
+        restart: always
+
+        networks:
+            - backend_network
+
+        #START_CONTAINER_PORT
+        ports:
+        - 8011:8011
+        #END_CONTAINER_PORT
+
+        logging:
+            driver: journald
+
+    auth_manager:
+        container_name: wnt_auth_manager
+        image: "{{ aws_ecr_repository }}/wnt_auth_manager:{{ wnt_version }}"
+        env_file:
+            - wnt.env
+        depends_on:
+            - mqttbroker
+
+        restart: always
+
+        networks:
+            - backend_network
+
+        #START_CONTAINER_PORT
+        ports:
+            - 8013:8013
+        #END_CONTAINER_PORT
+
+        logging:
+            driver: journald
+
+    metadata_manager:
+        container_name: wnt_metadata_manager
+        image: "{{ aws_ecr_repository }}/wnt_metadata_manager:{{ wnt_version }}"
+        env_file:
+            - wnt.env
+
+        depends_on:
+            - mqttbroker
+
+        restart: always
+
+        networks:
+            - backend_network
+
+        #START_CONTAINER_PORT
+        ports:
+            - 8012:8012
+        #END_CONTAINER_PORT
+
+        logging:
+            driver: journald
+
+{% for n in range(wnt_cluster_size | int ) %}
+    diagnostics_injector_{{ n }}:
+        container_name: wnt_diagnostics_injector_{{ n }}
+        image: "{{ aws_ecr_repository }}/wnt_diagnostics_injector:{{ wnt_version }}"
+
+        environment:
+            - CLUSTER_NO={{ n }}
+
+        env_file:
+            - wnt.env
+
+        depends_on:
+            - mqttbroker
+
+        restart: always
+
+        networks:
+            - backend_network
+
+        logging:
+            driver: journald
+{% endfor %}
+
+    next_hop_counter:
+        container_name: wnt_next_hop_counter
+        image: "{{ aws_ecr_repository }}/wnt_next_hop_counter:{{ wnt_version }}"
+        env_file:
+            - wnt.env
+
+        depends_on:
+            - mqttbroker
+
+        restart: always
+
+        networks:
+            - backend_network
+
+        logging:
+            driver: journald
+
+    influx:
+        container_name: wnt_influx
+        image: "{{ aws_ecr_repository }}/wnt_influx:{{ wnt_version }}"
+        env_file:
+            - wnt.env
+
+        volumes:
+            - influxdb2:/var/lib/influxdb2
+            - ./influx_config.json:/etc/influxdb2/config.json
+            - ./start_influx.sh:/etc/influxdb2/start_influx.sh
+
+        depends_on:
+            - mqttbroker
+
+        restart: always
+
+        networks:
+            - backend_network
+
+        #START_CONTAINER_PORT
+        ports:
+            - 8086:8086
+        #END_CONTAINER_PORT
+
+        logging:
+            driver: journald
+
+    postgres:
+        container_name: wnt_postgres
+        image: "{{ aws_ecr_repository }}/wnt_postgres:{{ wnt_version }}"
+        env_file:
+            - wnt.env
+        environment:
+            - POSTGRES_HOST_AUTH_METHOD=md5
+        volumes:
+            - postgresdb16:/var/lib/postgresql/data
+            - ./postgres.conf:/etc/postgresql/postgresql.conf
+
+        depends_on:
+            - mqttbroker
+
+        restart: always
+
+        networks:
+            - backend_network
+
+        #START_CONTAINER_PORT
+        ports:
+            - 5432:5432
+        #END_CONTAINER_PORT
+
+        logging:
+            driver: journald
+
+#common network for components
+networks:
+    backend_network:
+    broker_network:
+
+# persistent data location
+volumes:
+    influxdb2: {}
+    postgresdb16: {}
+    vernemq_data: {}

@@ -1,0 +1,41 @@
+# Wirepas Oy 2018
+---
+- name: create composition file for {{wpe_version}}
+  template:
+   src: "docker-compose_wpe.j2"
+   dest: "{{service_home}}/docker-compose.yml"
+   mode: 0775
+
+- name: create template files
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ service_home }}/{{ item }}"
+    mode: 0775
+  loop:
+    - "redeploy.sh"
+    - "wpe_generate_certs.sh"
+    - "services.json"
+
+- name: copy utility scripts
+  copy:
+    src: "{{item}}"
+    dest: "{{service_home}}/{{item|basename}}"
+    mode: 0775
+  with_fileglob:
+    - "*.sh"
+
+- name: generate certificates
+  shell: "cd {{service_home}} && ./wpe_generate_certs.sh"
+  ignore_errors: true
+
+
+- name: generate database configuration file
+  template:
+    src: "databases.j2"
+    dest: "{{service_home}}/databases.json"
+  ignore_errors: true
+
+
+- name: start Docker service
+  shell: "cd {{service_home}} && ./redeploy.sh"
+  ignore_errors: true

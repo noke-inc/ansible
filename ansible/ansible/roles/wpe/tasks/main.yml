@@ -1,0 +1,24 @@
+# Wirepas Oy 2018
+---
+- name: check for local {{wpe_storage}}
+  file:
+    path: "{{wpe_storage}}"
+    state: directory
+    mode: 0755
+  delegate_to: localhost
+
+- name: creating {{service_home}} folder
+  file:
+    path: "{{item}}"
+    state: directory
+    mode: 0770
+  loop:
+    - "{{service_home}}"
+    - "{{archive_path}}"
+
+- name: install wpe docker services
+  import_tasks: install_docker_services.yml
+
+- name: fetch user and server certificates
+  import_tasks: fetch_certificates.yml
+

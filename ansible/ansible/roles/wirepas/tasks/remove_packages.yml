@@ -1,0 +1,7 @@
+---
+
+- name: remove AWS directory
+  file:
+    state: absent
+    path: "{{aws_dir}}"
+  failed_when: false

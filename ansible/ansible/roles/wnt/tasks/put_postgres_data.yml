@@ -1,0 +1,24 @@
+---
+- name: Remove postgres db
+  command: "docker volume rm wnt_postgresdb"
+
+- name: Login to ECR
+  shell: "$(aws ecr get-login --region {{ aws_ecr_region }} --no-include-email --registry-id {{ aws_ecr_account }});"
+
+- name: docker compose up -d postgres
+  command: "docker compose up -d postgres"
+  args:
+    chdir: "{{ service_home }}"
+
+- name: Sleep for 10 seconds to ensure db is up before dumping
+  wait_for:
+    timeout: 10
+  delegate_to: localhost
+
+- name: Dump pgdata to docker postgres db
+  raw: cat {{ service_home }}/backups/postgres_dump_data_transfer.sql | docker exec -i wnt_postgres psql -U $(docker exec wnt_postgres bash -c 'echo "$POSTGRES_USER"')
+
+- name: Turn down wnt postgres after data restore
+  command: "docker compose down"
+  args:
+    chdir: "{{ service_home }}"

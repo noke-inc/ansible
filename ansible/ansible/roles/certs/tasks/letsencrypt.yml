@@ -1,0 +1,97 @@
+# Wirepas Oy 2020
+#
+# Requests certificate from letencrypt
+#
+# wirepas Oy
+---
+# no need for 20.04 (lets keep if we plan to support older ones)
+#- name: add universe and certbot repo
+#  apt_repository:
+#    repo: "{{ item }}"
+#    state: present
+#  loop:
+#    - "deb http://archive.ubuntu.com/ubuntu/ focal universe"
+#    - "ppa:certbot/certbot"
+#  become: true
+#  become_method: sudo
+
+#- name: install packages
+#  apt:
+#    update_cache: yes
+#    name:
+#      - "certbot"
+#      - "nginx"
+#      - "python3-certbot-nginx"
+#      - "software-properties-common"
+#  become: true
+#  become_method: sudo
+
+- name: install packages
+  apt:
+    update_cache: yes
+    name:
+      - "nginx"
+      - "socat"
+  become: true
+  become_method: sudo
+
+- name: install certbot with snap
+  snap:
+    name: certbot
+    classic: yes
+  become: true
+  become_method: sudo
+
+- name: start nginx
+  systemd:
+    state: started
+    name: nginx
+  become: true
+  become_method: sudo
+
+- name: run certbot
+  command: "certbot --nginx -m {{ owner_email }} -n --domains {{ instance_name }}.{{ instance_dns_zone }} --agree-tos"
+  become: true
+  become_method: sudo
+  notify: reload nginx
+
+- name: copy letsencrypt files to user home for modification
+  copy:
+    src: "/etc/letsencrypt/live/{{ instance_name }}.{{ instance_dns_zone }}/{{ item }}.pem"
+    dest: "/home/{{ instance_admin_user }}/{{ item }}.pem"
+    owner: "{{ instance_admin_user }}"
+    group: "{{ instance_admin_user }}"
+    remote_src: yes
+    mode: 0644
+  loop:
+    - "fullchain"
+    - "privkey"
+  ignore_errors: true
+  become: true
+  become_method: sudo
+
+- name: "Concat fullchain and privkey in /home/{{ instance_admin_user }}"
+  shell:
+    cmd: "cat fullchain.pem privkey.pem > bundle.pem"
+    chdir: "/home/{{ instance_admin_user }}"
+
+- name: "Remove tmp files"
+  file:
+    path: "{{ item }}.pem"
+    state: absent
+  loop:
+    - "fullchain"
+    - "privkey"
+
+- name: "Necessary permissions to bundle.pem"
+  file:
+    path: "/home/{{ instance_admin_user }}/bundle.pem"
+    mode: 0644
+
+- name: create vars and certs_register
+  set_fact:
+    letsencrypt_facts: {
+      'bundle_path': "/home/{{ instance_admin_user }}/bundle.pem",
+      'fullchain': "/etc/letsencrypt/live/{{ instance_name }}.{{ instance_dns_zone }}/fullchain.pem",
+      'privkey': "/etc/letsencrypt/live/{{ instance_name }}.{{ instance_dns_zone }}/privkey.pem"
+     }

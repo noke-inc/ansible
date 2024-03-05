@@ -1,0 +1,33 @@
+---
+- name: Write WNT component state
+  ansible.builtin.command: docker inspect --format {{ "'{{" }}.State.Status{{ "}}'" }} {{ item }}
+  register: status_results
+  changed_when: false
+  loop: "{{ wnt_services_list }}"
+
+- name: Populate statuses dict
+  set_fact:
+    wnt_statuses_dict: "{{ wnt_statuses_dict|default({}) | combine( {item.item: item.stdout} ) }}"
+  loop: "{{ status_results.results }}"
+
+#- debug:
+#    msg: "wnt_statuses_dict {{ wnt_statuses_dict }} postgres {{ wnt_statuses_dict }}['wnt_postgres']"
+
+- set_fact:
+    wnt_running: false
+# note that different wnt versions have different named scaled services therefore we are not counting those into
+# wnt_running check. These 2 would work for wnt4.x instances, but also clustering would be taken into account
+#wnt_statuses_dict['wnt_rtsituation_manager_0'] is defined and wnt_statuses_dict['wnt_rtsituation_manager_0'] == "running" and
+#wnt_statuses_dict['wnt_diagnostics_injector_0'] is defined and wnt_statuses_dict['wnt_diagnostics_injector_0'] == "running" and
+- set_fact:
+    wnt_running: true
+  when: >
+    wnt_statuses_dict['wnt_postgres'] is defined and wnt_statuses_dict['wnt_postgres'] == "running" and
+    wnt_statuses_dict['wnt_metadata_manager'] is defined and wnt_statuses_dict['wnt_metadata_manager'] == "running" and
+    wnt_statuses_dict['wnt_ferouter'] is defined and wnt_statuses_dict['wnt_ferouter'] == "running" and
+    wnt_statuses_dict['wnt_next_hop_counter'] is defined and wnt_statuses_dict['wnt_next_hop_counter'] == "running" and
+    wnt_statuses_dict['wnt_gateway_communicator'] is defined and wnt_statuses_dict['wnt_gateway_communicator'] == "running" and
+    wnt_statuses_dict['wnt_auth_manager'] is defined and wnt_statuses_dict['wnt_auth_manager'] == "running" and
+    wnt_statuses_dict['wnt_parser'] is defined and wnt_statuses_dict['wnt_parser'] == "running" and
+    wnt_statuses_dict['wnt_mqttbroker'] is defined and wnt_statuses_dict['wnt_mqttbroker'] == "running" and
+    wnt_statuses_dict['wnt_influx'] is defined and wnt_statuses_dict['wnt_influx'] == "running"

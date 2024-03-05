@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#
+# Wirepas Oy
+
+USER_NAME=${1:-"admin"}
+DOCKER_IMAGE="{{ aws_ecr_account }}.dkr.ecr.{{ aws_ecr_region }}.amazonaws.com/wnt_ferouter:{{ wnt_version }}"
+
+# generates certificate to output
+source ~/.profile > /dev/null 2>&1
+$(aws ecr get-login --region {{ aws_ecr_region }} --no-include-email --registry-id {{ aws_ecr_account }}) > /dev/null 2>&1
+
+docker run --rm \
+     --user $(id -u):$(id -g) \
+     -w /var/opt/wirepasnms/ \
+     -e USER_NAME=${USER_NAME} \
+     ${DOCKER_IMAGE} \
+     sh -c "./generate_password.sh"
+

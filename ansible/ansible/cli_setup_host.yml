@@ -1,0 +1,93 @@
+# Wirepas Oy 2020
+#
+# This play runs by default against a remote machine and install a set
+# of packages and then proceeds to install the needed WNT and WPE services.
+#
+# Example on how to run without an inventory file:
+#   ansible-playbook -i myinstance.mydnszone.com, cli_setup_host.yml
+#
+
+---
+- hosts: all
+  gather_facts: False
+  remote_user: "{{ ssh_user | default('ubuntu') }}"
+  vars_files:
+    - "vars/setup_host.yml"
+    - "vars/aws_account.yml"
+
+  # XXX Pre tasks are not relevant for Customer Selfhosting playbooks. This part is used in wirepas internal
+  pre_tasks:
+    - debug:
+        msg: "Using variables from vars/setup_host.yml {{inventory_hostname_short}} {{aws_profile}}"
+    - name: "Fetch key for {{inventory_hostname_short}}"
+      raw: "aws --profile {{ aws_profile }} --region {{aws_region}} ssm get-parameter --name /wirepas/{{inventory_hostname_short}}-private-key --with-decryption --output json | jq -r .Parameter.Value > keys.pem && chmod 0600 keys.pem"
+      delegate_to: localhost
+      tags: [wm-host, certs, services, cron]
+      when: aws_profile is defined and aws_profile != ""
+
+    - name: "Waitfor {{ inventory_hostname }} to be accessible"
+      wait_for:
+          host: "{{ inventory_hostname }}"
+          port: 22
+          delay: 1
+          timeout: 900
+      delegate_to: localhost
+
+  tasks:
+    - name: Check the current user with which this playbook is executed
+      command: whoami
+      register: current_user
+      tags: always
+
+    - name: Terminate the playbook if executed as root
+      assert:
+        that:
+          - current_user.stdout != "root"
+        fail_msg: Playbook shouldn't be executed as root user. Please do not use sudo to run the ansible-playbook command.
+        quiet: true
+      tags: always
+
+    - name: setup system dependencies
+      import_role:
+        name: wirepas
+      tags: wm-host
+
+    - name: Install and validate AWS credentials
+      import_role:
+        name: credentials
+      when: credential_check and credential_check|bool
+      tags: services, aws_credentials
+
+    - name: create self signed certificates
+      import_role:
+        name: certs
+      delegate_to: localhost
+      when: wnt_version|string != "None" and certificate == "self_signed"
+      tags: [services, certs]
+
+    - name: create letsencrypt certificates
+      import_role:
+        name: certs
+        tasks_from: letsencrypt
+      when: wnt_version|string != "None" and certificate == "letsencrypt"
+      tags: [services, certs]
+
+    - name: install WNT
+      import_role:
+        name: wnt
+      tags: services
+      when: wnt_version|string != "None"
+
+    - name: install WPE
+      import_role:
+        name: wpe
+      tags: services
+      when: wpe_version|string != "None"
+
+    - name: renewal of letsencrypt certificates
+      import_role:
+        name: certs
+        tasks_from: renewal
+      when: wnt_version|string != "None" and certificate == "letsencrypt"
+      tags: [ services, certs ]
+

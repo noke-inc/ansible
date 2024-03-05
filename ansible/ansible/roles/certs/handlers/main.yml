@@ -1,0 +1,7 @@
+---
+- name: reload nginx
+  systemd:
+    name: nginx
+    state: reloaded
+  become: true
+  become_method: sudo

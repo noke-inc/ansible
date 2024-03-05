@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#
+# Wirepas Oy
+
+ENV_DOCKER_IMG=${1:-"{{ aws_ecr_repository }}/wirepas-positioning"}
+ENV_DOCKER_TAG=${2:-"{{ wpe_version }}"}
+HOST_UID="1000"
+HOST_GID="1000"
+HOST_DIR="$(pwd)/certs"
+OUTPUT_TARGET="/exchange"
+CERT_EXPIRATION_DAYS=${3:-"{{ wpe_certs_expiration_days }}"}
+
+# enforces a clean directory
+rm -rf certs || true
+mkdir certs || true
+
+# generates certificates to volume mount
+source ~/.profile;
+$(aws ecr get-login --region {{ aws_ecr_region }} --no-include-email --registry-id {{ aws_ecr_account }});
+docker compose pull;
+docker run --rm \
+           --user root \
+           -v ${HOST_DIR}:${OUTPUT_TARGET} \
+           -e HOST_DIR=${HOST_DIR} \
+           -e HOST_UID=${HOST_UID} \
+           -e HOST_GID=${HOST_GID} \
+           ${ENV_DOCKER_IMG}:${ENV_DOCKER_TAG} \
+           bash -c "cd certs \
+                    && export DURATION=${CERT_EXPIRATION_DAYS} \
+                    && ./generate_certs.sh true \
+                    && cp -v ./* ${OUTPUT_TARGET} \
+                    && chown ${HOST_UID}:${HOST_GID} -R ${OUTPUT_TARGET}"

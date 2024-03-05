@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#
+# Wirepas Oy
+
+SEND=${1:-"false"}
+SECRETS=${2:-"false"}
+LOGS=wnt_logs.txt
+
+echo "This script will generate an archive from WNT/machine logs from the last 3 days"
+echo "USAGE ./send_debug_data_to_wirepas.sh PARAM1 PARAM2"
+echo "PARAMS 1: SEND LOGFILE TO WIREPAS AWS S3 BUCKET: true/false"
+echo "PARAMS 2: INCLUDE WNT.ENV/WPE DATABASES.JSON TO LOGFILE (contains secrets): true/false"
+echo "BY DEFAULT ./send_debug_data_to_wirepas.sh does not send anything it just creates the zipfile"
+echo "Inform Wirepas that you need a write access to s3://prod-wnt-instance-meta-backup/{{ instance_name }}"
+rm -f $LOGS
+touch $LOGS
+echo "############  DOCKER PS #############" >> $LOGS
+docker ps >> $LOGS
+echo "############  df -h  #############" >> $LOGS
+df -h >> $LOGS
+if [ $SECRETS = "true" ]
+then
+    echo "########### WNT ENV #############" >> $LOGS
+    cat wnt.env >> $LOGS
+    echo "########### WPE DATABASE.JSON #############" >> $LOGS
+    cat ../wpe/databases.json >> $LOGS
+fi
+echo "########### WPE CERT EXPIRATION #############" >> $LOGS
+openssl x509 -noout -dates -in ../wpe/certs/server.crt >> $LOGS
+sudo tar -cvzf wnt_logs.tar.gz $LOGS $(sudo find /var/log -name 'syslog*' -mtime -2)
+sudo chown $USER:$USER wnt_logs.tar.gz
+echo "wnt_logs.tar.gz created."
+if [ $SEND = "true" ]
+then
+    echo "Sending archive to Wirepas aws bucket."
+    echo "In case script fails during this phase consider sending the file manually or asking write permission from Wirepas Customer Support"
+    {% if aws_profile %}
+    aws s3 cp {{ service_home }}/wnt_logs.tar.gz s3://{{ aws_profile }}-wnt-instance-meta-backup/{{ instance_name }}/wnt_logs.tar.gz
+    {% else %}
+    aws s3 cp {{ service_home }}/wnt_logs.tar.gz s3://prod-wnt-instance-meta-backup/{{ instance_name }}/wnt_logs.tar.gz
+    {% endif %}
+    rm -f wnt_logs.tar.gz $LOGS
+else
+    echo "Not sending data to Wirepas"
+    echo "Please send the tar file manually via e.g email or some fileshare in case it's big"
+    echo "Or run script again with ./send_debug_data_to_wirepas.sh true"
+    rm -f $LOGS
+fi

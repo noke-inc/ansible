@@ -1,0 +1,148 @@
+Instructions to get WNT up and running
+======================================
+
+Backend WNT version: {{wnt_version}}
+{% if wpe_version %}
+Backend WPE version: {{wpe_version}}
+{% endif %}
+
+1. Download the WNT client installer (Wirepas_Network_Tool_Setup(version).exe) from https://developer.wirepas.com;
+
+
+2. Execute the installer and follow the instructions to get the client installed to a Windows 10/11 PC;
+
+
+3. Launch the WNT client software. First the authentication server address is asked, please enter:
+
+|
+{% if certificate != "no_cert" %}
+    wss://{{instance_domain_name}}:{{wnt_authentication_server_port}}
+{% else %}
+    ws://{{instance_domain_name}}:{{wnt_authentication_unsecure_server_port}}
+{% endif %}
+|
+
+4. After that the software asks for credentials:
+
+|
+{% include "admin_part.j2" ignore missing %}
+
+|
+
+5. After a successful login, the Overview page is opened in the application;
+
+
+6. Go to Settings -> General settings and please verify that server addresses are filled correctly:
+
+|
+
+===================== ===================================================================
+ **Server**            **URL**
+===================== ===================================================================
+{% if certificate != "no_cert" %}
+**Application**        wss://{{instance_domain_name}}:{{wnt_application_server_port}}
+
+**Metadata**           wss://{{instance_domain_name}}:{{wnt_metadata_server_port}}
+
+**Authentication**     wss://{{instance_domain_name}}:{{wnt_authentication_server_port}}
+
+**Time series**        https://{{instance_domain_name}}:{{wnt_time_series_server_port}}
+
+**Websocket API**      wss://{{instance_domain_name}}:{{wnt_mqtt_json_server_port}}/mqtt
+{% else %}
+**Application**        ws://{{instance_domain_name}}:{{wnt_application_unsecure_server_port}}
+
+**Metadata**           ws://{{instance_domain_name}}:{{wnt_metadata_unsecure_server_port}}
+
+**Authentication**     ws://{{instance_domain_name}}:{{wnt_authentication_unsecure_server_port}}
+
+**Time series**        http://{{instance_domain_name}}:{{wnt_time_series_unsecure_server_port}}
+
+**Websocket API**      ws://{{instance_domain_name}}:{{wnt_mqtt_json_unsecure_server_port}}/mqtt
+{% endif %}
+===================== ===================================================================
+
+
+Gateway MQTT credentials
+======================================
+
+|
+
+    User name:
+        {{wnt_mqtt_gateway_username}}
+
+    Password:
+        {{wnt_mqtt_gateway_password}}
+
+|
+
+Backend MQTT credentials
+========================
+
+The mqttmasteruser has capabilities of publishing and subscribing to any topic on the target host.
+Please use this user if you wish to interact fully with the backend API defined under WNT-backend API.
+https://developer.wirepas.com
+
+
+|
+
+    User name:
+        {{wnt_mqtt_master_username}}
+
+    Password:
+        {{wnt_mqtt_master_password}}
+
+|
+
+JSON API credentials
+====================
+Please use this user if you wish to interact with the backend API using JSON. API defined under WNT-backend API.
+https://developer.wirepas.com
+
+|
+
+    User name:
+        {{wnt_mqtt_json_username}}
+
+    Password:
+        {{wnt_mqtt_json_password}}
+
+|
+
+JSON LIB credentials
+====================
+User for Wirepas MQTT Library
+This Lib is designed to ease the development of tools on top of Wirepas Gateway to backend Api (MQTT with protobuf
+payloads). https://github.com/wirepas/wirepas-mqtt-library
+
+|
+
+    User name:
+        {{ wnt_mqttlib_json_username }}
+
+    Password:
+        {{ wnt_mqttlib_json_password }}
+
+|
+
+
+User access rights
+==================
+
+The MQTT broker has the following rules for the users
+
+user mqttjsonuser
+topic read node_data_json/#
+
+user mosquittouser
+topic read gw-request/#
+topic write gw-event/#
+topic write gw-response/#
+
+user mqttlibraryuser
+topic write gw-request/#
+topic read gw-event/#
+topic read gw-response/#
+
+user mqttmasteruser
+topic #

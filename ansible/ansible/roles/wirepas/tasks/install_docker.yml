@@ -1,0 +1,31 @@
+#
+# Main tasks for role, installs and configures Docker engine to the host
+# - Download and install Docker CE with convenience script
+# - Allow non-root user to run Docker
+#
+---
+- name: Download convenience script for Docker installation
+  get_url:
+    url: 'https://get.docker.com'
+    dest: '{{ docker_install_script_path }}'
+    owner: '{{ instance_admin_user }}'
+    group: '{{ instance_admin_user }}'
+    mode: 0750
+
+- name: Run the Docker installation script
+  command: '{{ docker_install_script_path }}'
+
+- name: add {{instance_admin_user}} to docker group
+  shell: usermod -aG docker {{instance_admin_user}}
+  become: true
+  become_method: sudo
+
+- name: Enable Docker service startup at boot and make sure that it is running
+  systemd:
+    name: docker
+    enabled: true
+
+- name: Remove docker install script
+  file:
+    path: "{{ docker_install_script_path }}"
+    state: absent

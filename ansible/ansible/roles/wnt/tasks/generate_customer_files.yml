@@ -1,0 +1,40 @@
+# Wirepas Oy 2018
+#
+# Generates env file that contains all the variables for customer
+# Genarates and customer reports
+#
+# wirepas Oy
+---
+
+- name: Check if there is an existing generated secrets of WNT
+  ansible.builtin.stat:
+    path: "{{ service_home }}/wnt.env"
+  changed_when: false
+  register: wnt_env_install_check
+
+- name: backup old env file
+  copy:
+    src: "{{ service_home }}/wnt.env"
+    dest: "{{ service_home }}/wnt_reinstall_backup.env"
+    remote_src: yes
+    backup: true
+    mode: 0664
+  when: wnt_env_install_check.stat.exists
+
+- name: Check the vcpu of host system
+  shell: "cat /proc/cpuinfo | grep processor | wc -l"
+  register: vcpu_output
+- set_fact:
+    wnt_cluster_size: "{{ [vcpu_output.stdout|int/2, 2] | max | int}}"
+  when: vcpu_output and vcpu_output.stdout
+
+- name: create wnt.env file
+  template:
+    src: "wnt.env.j2"
+    dest: "{{ service_home }}/wnt.env"
+
+- name: create customer report file
+  template:
+    src: "customer_report.j2"
+    dest: "{{ service_home }}/customer_report.rst"
+

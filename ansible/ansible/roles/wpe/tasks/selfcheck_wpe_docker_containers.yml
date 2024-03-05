@@ -1,0 +1,13 @@
+---
+- name: check if WPE exists
+  stat:
+    path: "{{ service_home }}"
+  register: wpe_folder
+
+- name: Check WPE state
+  import_tasks: check_wpe_state.yml
+  when: wpe_folder.stat.exists
+
+- assert:
+   that:
+      - wpe_running

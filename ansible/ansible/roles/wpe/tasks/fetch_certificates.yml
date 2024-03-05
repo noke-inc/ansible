@@ -1,0 +1,32 @@
+# Wirepas Oy 2018
+---
+- name: Create a zip archive with only the client certificates
+  archive:
+    path:
+    - "{{remote_certs}}/"
+    dest: "{{archive_client}}"
+    exclude_path:
+    - "{{remote_certs}}/*manager*"
+    format: zip
+
+- name: Create a zip archive with all the certificates
+  archive:
+    path:
+    - "{{remote_certs}}/"
+    dest: "{{archive_server}}"
+    format: zip
+
+- name: fetch certificate archives
+  fetch:
+    src: "{{item.source}}"
+    dest: "{{item.dest}}"
+    flat: yes
+  loop:
+    - {source: "{{archive_client}}", dest: "{{wpe_storage}}/client_certs.zip"}
+    - {source: "{{archive_server}}", dest: "{{wpe_storage}}/server_certs.zip"}
+
+
+- name: store wpe client certs path
+  set_fact:
+    wpe_certs_client: "{{wpe_storage}}/client_certs.zip"
+    wpe_certs_server: "{{wpe_storage}}/server_certs.zip"

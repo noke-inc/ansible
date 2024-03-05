@@ -1,0 +1,23 @@
+---
+instance_admin_home: "/home/{{instance_admin_user}}"
+install_packages: ["awscli",
+                   "apt-transport-https",
+                   "ca-certificates",
+                   "curl",
+                   "gnupg-agent",
+                   "software-properties-common",
+                   "socat",
+                   "gnupg2",
+                   "pass"]
+
+remove_packages: ["docker",
+                   "docker-engine",
+                   "docker.io",
+                   "containerd",
+                   "runc"]
+
+aws_dir: "{{instance_admin_home}}/.aws/"
+docker_install_script_path: '{{ instance_admin_home }}/get_docker.sh'
+docker_minimum_version: 23.0
+# this default will be overwriten when docker is found.
+docker_version: 1.1

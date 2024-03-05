@@ -1,0 +1,12 @@
+# Wirepas Oy 2021
+#
+# renewal of certificate from letencrypt
+#
+# wirepas Oy
+---
+- name: scheduled certbot run
+  cron:
+    name: "renew certificates"
+    special_time: weekly
+    job: "/home/{{ instance_admin_user }}/wnt/renew_cert.sh {{ instance_name }}.{{ instance_dns_zone }}"
+  tags: cron

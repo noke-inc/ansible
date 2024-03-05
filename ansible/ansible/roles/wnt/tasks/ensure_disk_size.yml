@@ -1,0 +1,23 @@
+---
+- name: Get disk size
+  ansible.builtin.command: "df . --output=avail -k"
+  register: reg_disk_size
+
+- name: Get influx size
+  ansible.builtin.shell: "du /var/lib/docker/volumes/wnt_influxdb/_data -c | grep total | head -n1 | awk '{print $1;}'"
+  become: true
+  become_method: sudo
+  register: reg_influx_size
+
+- set_fact:
+    size_avail: "{{ reg_disk_size.stdout_lines[1] | int }} - {{ (reg_influx_size.stdout|int)*2 | int }}"
+    calculated_size_avail: "{{ (reg_disk_size.stdout_lines[1] | int) - ((reg_influx_size.stdout|int)*2 | int) }}"
+
+- name: Ensure enough size for influx migrate
+  fail:
+    msg: >
+      There is not enough disk for migrate from influx1 to influx2.
+      Required 2x Influxdb size: {{ (reg_influx_size.stdout|int)*2 | int }}
+      Available {{ reg_disk_size.stdout_lines[1] }}
+      Free after migration {{ size_avail }}
+  when: calculated_size_avail | int < 0

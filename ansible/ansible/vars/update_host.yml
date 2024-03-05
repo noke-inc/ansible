@@ -1,0 +1,27 @@
+---
+ansible_python_interpreter: /usr/bin/python3
+
+instance_admin_user: "ubuntu" # your remote install admin user
+ansible_ssh_private_key_file: "./keys.pem" # private key to access remote
+
+# If you wish to skip wpe installation set wpe_version to None or empty
+wnt_version: "4.4"
+wpe_version: "1.7"
+
+# report and credentials
+encrypt_local_files: false
+wnt_storage: "{{ playbook_dir }}/wnt" # wnt files will be copied here
+wpe_storage: "{{ playbook_dir }}/wpe" # wpe files will be copied here
+
+# These variables are populated from your host name. They assume it
+# follows the pattern: name.domain.country
+instance_split: "{{ inventory_hostname.split('.') }}"
+instance_name: "{{ instance_split[0] }}"
+instance_dns_zone: "{{ '.'.join(instance_split[1:]) }}"
+instance_domain_name: "{{ inventory_hostname }}"
+
+# We rewrite compose file in update, so this check is just to tell if we add haproxy to it
+# so any other selection than no_cert will generate the haproxy section here
+# updates don't support changing the type of certificate used
+# valid choises are [any, no_cert]
+certificate: "any"

@@ -1,0 +1,11 @@
+{
+ "mqtt": {
+   "username": {{mqtt_username | replace('\'', '') | to_json}},
+   "password": {{mqtt_password | replace('\'', '') | to_json}},
+   "hostname": {{mqtt_hostname | replace('\'', '') | to_json}},
+   "port": {{mqtt_port | to_json}},
+   "allow_insecure": {{mqtt_allow_insecure | to_json }},
+   "cert": null,
+   "ignore_configuration_data": {{mqtt_ignore_configuration | to_json}}
+ }
+}

@@ -1,0 +1,22 @@
+---
+
+- name: ensure backups folder exist
+  file:
+   path: "{{service_home}}/backups"
+   state: directory
+   mode: 0770
+
+- name: create backup restore readme to instance
+  copy:
+    src: "README_FOR_RESTORE"
+    dest: "{{service_home}}/backups"
+    mode: 0664
+
+- name: create backup cron to instance
+  template:
+    src: "backup.cron.j2"
+    dest: "{{service_home}}/backups/backup.cron"
+
+- name: set backup cron for service
+  shell:
+    cmd: "crontab {{service_home}}/backups/backup.cron"

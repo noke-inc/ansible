@@ -1,0 +1,12 @@
+# Restoring the data from postgres dump
+# in case of corrupted database or accidental lost of metadata
+# (might be good idea to backup docker volume before deleting it or make backup using the command in the backup.cron)
+# ensure that gateways are not pushing data to backend since it might cause issues in restoring the database
+
+
+/wnt$ docker compose down
+/wnt$ docker volume rm wnt_postgresdb16
+/wnt$ docker compose up -d postgres
+/wnt$ cat backups/dump_daily.sql | docker exec -i wnt_postgres psql -U clrobusr324xxd
+/wnt$ docker compose down
+/wnt$ docker compose up -d

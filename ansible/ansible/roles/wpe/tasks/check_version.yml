@@ -1,0 +1,29 @@
+---
+###########################################
+#  Assess current/desired versions
+###########################################
+- name: ensure the WPE services are running
+  import_tasks: selfcheck_wpe_docker_containers.yml
+
+- name: Check WPE version
+  script: "get_version.sh wpe-core"
+  args:
+    chdir: "{{ service_home }}"
+  register: old_wpe_full_version
+
+- name: Determine the old wpe major versions
+  set_fact:
+    old_wpe_major: "{{ old_wpe_full_version.stdout | default(None) | replace('release_', '') | regex_search('(\\d+\\.\\d+)') }}"
+    wpe_major_compare: "{{ wpe_version | replace('dev_', '') | regex_search('(\\d+\\.\\d+)') }}"
+
+###########################################
+#  Validate current vs desired versions
+###########################################
+- name: Check that the upgrade is attempted from the previous (1.6) major version.
+  ansible.builtin.assert:
+    that:
+      - old_wpe_major | float == 1.6
+      - wpe_major_compare | float == 1.7
+    success_msg: "Version validity check pass."
+    fail_msg: >-
+      This version of installer only supports updating WPE from 1.6.x to 1.7.x.

@@ -1,0 +1,15 @@
+user mqttjsonuser
+topic read node_data_json/#
+
+user mosquittouser
+topic read gw-request/#
+topic write gw-event/#
+topic write gw-response/#
+
+user mqttlibraryuser
+topic write gw-request/#
+topic read gw-event/#
+topic read gw-response/#
+
+user mqttmasteruser
+topic #

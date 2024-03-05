@@ -1,0 +1,10 @@
+---
+
+- name: Delete old WNT Influx db
+  ansible.builtin.command: "docker volume rm wnt_influxdb"
+
+- name: Postgres dump cleanup
+  file:
+    path: "{{ service_home }}/backups/postgres_dump_data_transfer.sql"
+    state: absent
+  failed_when: false

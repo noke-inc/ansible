@@ -1,0 +1,52 @@
+---
+- name: include common vars
+  include_vars:
+    file: common.yml
+
+- name: include wnt vars
+  include_vars:
+    file: wnt.yml
+
+###########################################
+#  Assess current/desired versions
+###########################################
+
+- name: ensure the WNT services are running
+  import_tasks: selfcheck_wnt_docker_containers.yml
+
+- name: Check WNT version
+  script: "get_version.sh wnt_parser"
+  args:
+    chdir: "{{ service_home }}"
+  register: old_wnt_full_version
+
+- name: Determine the old wnt major version
+  set_fact:
+    old_wnt_major: "{{ old_wnt_full_version.stdout | default(None) | replace('release_', '') | replace('dev_', '') | regex_search('(\\d+\\.\\d+)') }}"
+
+###########################################
+#  Validate current vs desired versions
+###########################################
+- name: Check that the WNT version to update to has been specified
+  fail: 
+    msg: > 
+      Could not find the desired WNT version to update to. 
+      Please specify a WNT version (wnt_version) to update to in vars/update_host.yml file
+  when: wnt_version is defined and (wnt_version == None or wnt_version|string == "None")
+
+- name: Check that a downgrade is not being attempted
+  fail: 
+    msg: > 
+      Downgrading WNT version is not supported. 
+      Please make sure that the WNT specified in vars/update_host.yml is greater than the one currently running on the system.
+  when: old_wnt_major | float > wnt_major | float
+
+- name: Check that the upgrade is attempted from the previous (4.3) major version. This version is picky on old version since we do DB migration to newer version.
+  ansible.builtin.assert:
+    that:
+      - old_wnt_major | float == 4.3
+    fail_msg: "Ensure WNT old version is 4.3.x now found {{ old_wnt_major }}"
+    success_msg: "Update version check successful."
+
+- name: ensure disk size is sufficient for update
+  import_tasks: ensure_disk_size.yml

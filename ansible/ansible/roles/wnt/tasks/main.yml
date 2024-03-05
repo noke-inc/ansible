@@ -1,0 +1,23 @@
+# Wirepas Oy 2018
+#
+# Setups the wnt services at the remote host
+#
+# wirepas Oy
+
+---
+
+- name: check for {{wnt_storage}}
+  file:
+    path: "{{wnt_storage}}"
+    state: directory
+    mode: 0755
+  delegate_to: localhost
+
+- name: create wnt folder
+  file:
+   path: "{{service_home}}"
+   state: directory
+   mode: 0770
+
+- name: install wnt docker services for wnt
+  import_tasks: install_docker_services.yml

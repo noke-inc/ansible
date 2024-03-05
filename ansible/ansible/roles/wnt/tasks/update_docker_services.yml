@@ -1,0 +1,89 @@
+# Wirepas Oy 2022
+#
+# Setups the wnt services at the remote host
+#
+# wirepas Oy
+---
+- name: Backup old postgres
+  import_tasks: get_postgres_data.yml
+
+- name: stop WNT Docker service
+  command: "docker compose down"
+  args:
+    chdir: "{{ service_home }}"
+  ignore_errors: true
+
+- name: Update Cluster Size variable from previous running config
+  block:
+    - name: Check Cluster Size from current env to use it in updated compose
+      shell: "cat wnt.env | grep CLUSTER_SIZE | sed 's/CLUSTER_SIZE=//'"
+      args:
+        chdir: "{{ service_home }}"
+      changed_when: false # This just makes things look prettier in the logs
+      register: cluster_check
+    - name: print check
+      debug:
+        msg: "Will use cluster size of {{ cluster_check.stdout }} in new compose"
+    - set_fact:
+        wnt_cluster_size: "{{ cluster_check.stdout | int }}"
+      when: cluster_check.stdout | int > 0
+  when: old_wnt_major | float >= 4.0
+
+# creation of new files and replacement of locally modified files
+- name: create composition file for wnt_{{wnt_version}}
+  template:
+    src: "docker-compose_wnt.j2"
+    dest: "{{service_home}}/docker-compose.yml"
+    mode: 0775
+
+- name: copy utility scripts
+  copy:
+    src: "{{item}}"
+    dest: "{{service_home}}/{{item|basename}}"
+    mode: 0775
+  with_fileglob:
+    - "*.sh"
+
+- name: Ensure templated utility scripts are up to date
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ service_home }}/{{ item }}.sh"
+    mode: 0775
+  loop:
+    - "redeploy"
+    - "renew_cert"
+    - "send_debug_data_to_wirepas"
+
+# update also install_docker_services when changing
+- name: copy configs for WNT
+  copy:
+    src: "conf/{{item}}"
+    dest: "{{service_home}}/{{item}}"
+    mode: 0775
+  loop:
+    - "dhparams.pem"
+    - "haproxy.cfg"
+    - "influxdb.conf"
+    - "influx_config.json"
+    - "vmq.acl"
+    - "prestart.sh"
+    - "postgres.conf"
+    - "start_influx.sh"
+
+- name: Update 4.4 specific configs
+  import_tasks: update_44_changes.yml
+
+- name: ensure correct permissions for bundle
+  file:
+    path: "{{ service_home }}/bundle.pem"
+    mode: 0644
+  when: certificate != "no_cert"
+
+- name: start WNT Docker service
+  shell: "cd {{service_home}} && ./redeploy.sh"
+
+- name: ensure backup cron is running
+  import_tasks: backup.yml
+
+- name: cleanup
+  import_tasks: cleanup.yml

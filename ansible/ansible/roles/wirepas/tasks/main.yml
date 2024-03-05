@@ -1,0 +1,28 @@
+# Wirepas Oy 2018
+---
+
+- name: enable timestamps in history
+  lineinfile:
+    path: ~/.bashrc
+    line: HISTTIMEFORMAT="%d/%m/%y %T "
+    create: yes
+
+- name: upgrade all packages to the latest version
+  import_tasks: host_maintenance.yml
+
+- name: reboot server
+  shell: sleep 2 && /sbin/shutdown -r now "ansible reboot request"
+  async: 1
+  poll: 0
+  ignore_errors: true
+  become: true
+  become_method: sudo
+  when: inventory_hostname != "127.0.0.1" and inventory_hostname != "localhost"
+
+- name: waiting for {{inventory_hostname}} to boot
+  local_action: "wait_for host={{inventory_hostname}} port=22 state=started delay=60"
+  become: false
+  ignore_errors: true
+  when: inventory_hostname != "127.0.0.1" and inventory_hostname != "localhost"
+
+

@@ -1,0 +1,17 @@
+---
+
+- name: stop WPE Docker services
+  command: "docker compose down"
+  args:
+    chdir: "{{ service_home }}"
+  ignore_errors: true
+
+- name: remove wpe folder with all the content
+  file:
+    state: absent
+    path: "{{service_home}}"
+
+- name: remove archives
+  file:
+    state: absent
+    path: "{{archive_path}}"
